@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+
+<html>
+
+<head>
+
+    <title></title>
+
+<script language="JavaScript" type="text/javascript">
+function Validate()
+{
+if(f1.text1.value=="" || f1.text2.value==""){
+alert("please fill all the entries ")
+return false;}
+else
+return true;
+}
+</script>
+</head>
+
+ <body bgcolor="#FFCC99">
+     <center>
+
+             <br /> <br /> <br /> <br /> <br /> <br /> <br />
+             <form id="f1" action="Check.jsp" method="post" onSubmit="return Validate()">
+                     <table>
+                 <tr><td>ENTER USER NAME : </td>
+                     <td><input type="text" name="text1" size="20" value="">
+
+                 </td></tr>
+                 <tr><td> ENTER PASSWORD Here:</td>
+                     <td>   <input type="password" name="text2" size="20" value="">
+                     </td>
+                 </tr>
+                 <tr><td>
+                     DEPARTMENT :</td>
+                     <td><select name="department" id="department">
+                             <option value="-select-">-select-</option>
+                             <option value="ACRE">ACRE</option>
+                             <option value="ADMIN">ADMIN</option>
+                             <option value="AERO">AERO</option>
+                             <option value="ASC">ASC</option>
+                             <option value="BioSchool">BioSchool</option>
+                             <option value="CASDE">CASDE</option>
+                             <option value="CC">CC</option>
+                             <option value="CDEEP">CDEEP</option>
+                             <option value="CESE">CESE</option>
+                             <option value="CFDVS">CFDVS</option>
+                             <option value="CHE">CHE</option>
+                             <option value="CHEM">CHEM</option>
+                             <option value="CIVIL">CIVIL</option>
+                             <option value="COR">COR</option>
+                             <option value="CSE">CSE</option>
+                             <option value="CSER">CSER</option>
+                             <option value="CTARA">CTARA</option>
+                             <option value="CampusSchool">CampusSchool</option>
+                             <option value="EE">EE</option>
+                             <option value="ESE">ESE</option>
+                             <option value="ET">ET</option>
+                             <option value="External">External</option>
+                             <option value="GATEJEE">GATEJEE</option>
+                             <option value="GEOS">GEOS</option>
+                             <option value="Groups">Groups</option>
+                             <option value="HSS">HSS</option>
+                             <option value="IDC">IDC</option>
+                             <option value="IEOR">IEOR</option>
+                             <option value="IRCC">IRCC</option>
+                             <option value="MATH">MATH</option>
+                             <option value="ME">ME</option>
+                             <option value="MET">MET</option>
+                             <option value="Mailman Alias">Mailman Alias</option>
+                             <option value="OTHER">OTHER</option>
+                             <option value="PHY">PHY</option>
+                             <option value="PREP">PREP</option>
+                             <option value="Permanenet Accounts">Permanenet Accounts</option>
+                             <option value="RE">RE</option>
+                             <option value="SAIF">SAIF</option>
+                             <option value="SCE">SCE</option>
+                             <option value="SOM">SOM</option>
+                             <option value="Simple_Aliases">Simple_Aliases</option>
+                             <option value="System Accounts">System Accounts</option>
+                         </select>
+
+                 </td></tr>
+                         <tr><td>CATEGORY :</td>
+                            <td> <select name="category" id="category" >
+                                 <option value="-select-">-select-</option>
+                                 <option value="FAC">FAC</option>
+                                 <option value="MISC">MISC</option>
+                                 <option value="Stf">STF</option>
+                                 <option value="PRJSTF">PRJSTF</option>
+                                 <option value="DD">DD</option>
+                                 <option value="PG">PG</option>
+                                 <option value="RS">RS</option>
+                                 <option value="UG">UG</option>
+                             </select>
+
+                         </td>
+                     </tr>
+                     <tr><td></td><td><input type="submit" value="Check In" name="Submit"></td>
+                 </tr>
+</form>
+</center>
+  </body>
+</html>

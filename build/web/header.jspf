@@ -1,0 +1,8 @@
+<%-- any content can be specified here e.g.: --%>
+<%@ page pageEncoding="windows-1252" %>
+<html>
+
+    <center><head><A HREF="index.jsp"><font color="#999877" size=7>Analytic Hierarchical Process (AHP)</font></A></head></center><br><br>
+    <body>
+        <table align="center" border="1">
+        

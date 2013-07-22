@@ -1,0 +1,667 @@
+The JUNG Developer's FAQ
+ Last updated 2 December 2004
+ Up to date for JUNG 1.5.1
+
+============
+GETTING HELP
+============
+Q. Where do I go to get questions answered?
+
+A. Check either the JUNG Support forum
+	https://sourceforge.net/forum/forum.php?forum_id=252062
+or the JUNG-support mailing list
+
+
+==============
+THE BASICS
+==============
+
+Q. What is this "TestCase" that I see references to?
+
+A. It's part of JUnit, the tool we use for unit testing out code. See http://junit.org
+
+
+Q. How do I add two parallel edges to a SparseGraph?
+
+A. Make sure the graph allows parallel edges (this means you can't use
+ DirectedSparseGraph or UndirectedSparseGraph, unless you remove the 
+ edge constraint Graph.NO_PARALLEL_EDGE from them) and make sure that the
+ vertex implementation accepts them (don't use the Simple*SparseVertex 
+ implementations).
+
+	Graph g = new SparseGraph();
+	Vertex v1 = g.addVertex( new SparseVertex());
+	Vertex v2 = g.addVertex( new SparseVertex());
+	g.addEdge( new UndirectedSparseEdge( v1, v2 ));
+	g.addEdge( new UndirectedSparseEdge( v1, v2 ));
+	
+Q. How are the following related: the interfaces DirectedGraph and 
+UndirectedGraph, the constraints Graph.DIRECTED_EDGE and Graph.UNDIRECTED_EDGE, 
+and the classes DirectedSparseGraph and UndirectedSparseGraph?
+
+A. DirectedGraph and UndirectedGraph are tagging interfaces, whose 
+implementation contract states that any graph that implements these interfaces 
+must have only directed or undirected edges (respectively).  In the 
+implementations that we supply, these constraints are enforced by the predicates 
+Graph.DIRECTED_EDGE and Graph.UNDIRECTED_EDGE.  This means, for example, that a 
+graph can be small-d directed (i.e., have only directed edges) but not be an 
+instance of DirectedGraph.  DirectedSparseGraph includes, by default, the 
+constraint Graph.DIRECTED_EDGE.  (The last two sentences also apply to 
+undirected graphs, with "undirected" substituted for "directed".)
+
+
+Q. Why are there Directed, Undirected, and "neutral" versions of Edge, Graph, 
+and Vertex?
+	
+A. Edges may be either Directed or Undirected.  This is an inherent property of
+edges: they can either be directed, and have a defined head (destination) and
+tail (source), or be undirected, and have neither.
+
+Graphs may be Directed, Undirected, or neither.  This reflects the kinds of
+edges that they accept.  If a given graph instance includes neither the 
+Graph.DIRECTED_EDGE nor the Graph.UNDIRECTED_EDGE constraint, then they may 
+accept either type of edge.  This is done so that algorithms that work one way 
+on directed graphs, and another on undirected graphs, can find out what kind of 
+input they have (or reject the input if it's not of the right type).
+
+The different vertex implementations may be connected by directed edges, 
+undirected edges, or both.  For reasons of computational efficiency (of both 
+time and space), we've created several different implementations.  You can just 
+use SparseVertex for everything, but it requires more space (and time) than the 
+same methods on DirectedSparseVertex.   (Analogously, the Simple*Vertex 
+implementations do not support parallel edges, and require correspondingly less 
+space than their non-Simple counterparts.)  If this is confusing, you can create 
+a TypedVertexGenerator factory, and use its create() method to make your 
+vertices.
+
+(Before JUNG's initial release, we experimented with making the graph solely 
+responsible for creating vertices of the appropriate type (based on the graph's 
+edge constraints).  The problem with this is that it prevents users from 
+creating their own vertex types, which is can be a very powerful tool in Java.)
+
+	
+Q. I have a need for storing the ID of the vertex with the vertex and
+accessing the id given vertex and accessng the vertex given id.
+
+A. Both the StringLabeller and the Indexer mechanism allow one to go
+back-and-forth from  ID to Vertex and vice versa. However, the Indexer
+isn't robust in the face of graph changes (if the graph changes, the
+index can too) and the StringLabeller works on Strings.
+
+As a general solution, consider associating a BidiMap (from
+Commons-Collections) with the Graph.
+
+thus,
+	BidiMap bMap = new DualHashBidiMap();
+	graph.addUserDatum( BMAP_KEY, bMap, UserData.REMOVE );
+
+then do things like
+	bMap.put( VERTEX, ID );
+	Vertex v = bMap.get( ID );
+	Object id = bMap.get( vertex );
+
+
+Q. How can I get a reliable ordering of vertices? In particular, if I
+read in a GraphML file, how can I then iterate through them in the
+order by ID? getAllVertices.iterator() doesn't go in any particular order.
+
+A. This is true. The contract for the java Set iterator states that
+the order in which the iterator visits the elements of the Set is
+undefined. In particular, the order is not guaranteed to be the
+insertion order (and usually isn't). See the previous answer for one
+solution: you may then iterate the BidiMap's ID list.
+
+Q. How can I append a second graph into a first?
+
+A. NEW: GraphUtils.union(g1, g2).  (The previous answer is retained
+below for archival purposes.)
+
+It would be something like this:
+
+	// adds all vertices of g2 into g1
+	// connects g2 to g1 as if v1 and v2 were the same 
+
+     void merge( graph g1, graph g2, vertex v1, vertex v2 ) {
+	// copy the vertices in
+	for ( Vertex v in g2.getVertices() ) {
+	  if (v != v1 ) v.copy( g1 );
+
+	  // copy the edges in
+	  for ( Edge e in g2.getEdges() ) {
+	    Vertex front = e.getEndpoints().first();
+  	    Vertex back = e.getEndpoints() .back()
+	  if( front == v1 ) {
+	    g2.addEdge( new DirectedSparseEdge( v2, back);
+	  } else if ( back == v1 ) {
+	    g2.addEdge( new DirectedSparseEdge( front, v2);
+	  } else {
+	    e.copy( g2 );
+	  }
+	}
+
+
+
+Q. Can I use JUNG without CERN Colt?
+
+A. NEW: the most recent version of Colt has a license that allows 
+commercial use.  If you want to remove Colt for some other reason,
+you can, but this will disable the following elements: some of the 
+classes in algorithms.importance, the KKLayout algorithm, the ExactFlowCommunity 
+algorithm in algorithms.cluster, some of the code in 
+algorithms.GraphMatrixOperations, io.MatrixFile, and some of the routines in the 
+statistics package.  Everything else should work OK.
+
+
+Q. Does JUNG support serialization?
+
+A. We haven't implemented it, largely because none of the JUNG core
+team understand serialization well enough to do it correctly. If you
+do, please feel free to contribute code.
+
+==================
+CAPTURING GRAPHS
+=================
+
+Q. How can I save a graph to EPS, PNG, or JPG?
+
+A. you can use a Java screen dump utility for EPS, PNG, and JPEG
+http://drzaius.ics.uci.edu/blogs/danyelf/archives/000100.html
+
+or, for JPEG, use either this code:
+
+public void saveGraphAsJPEG(GraphDraw myGraph, String filename) {
+  Dimension size = myGraph.getSize();
+  BufferedImage myImage =
+    new BufferedImage(size.width, size.height,
+        BufferedImage.TYPE_INT_RGB);
+  Graphics2D g2 = myImage.createGraphics();
+  myGraph.paintComponent(g2);
+  try {
+    OutputStream out = new FileOutputStream(filename);
+       JPEGImageEncoder encoder = JPEGCodec.createJPEGEncoder(out);
+     encoder.encode(myImage);
+     out.close();
+   } catch (Exception e) {
+     System.out.println(e);
+  }
+} 
+
+or this (similar) code:
+
+/**
+* Convert the viewed graph to a JPEG image written in the specified file name.
+* The size of the image is the size of the layout. The background color is this one
+* of the visualization viewer. The default representation of the image is 8-bit RGB
+* color components, corresponding to a Windows- or Solaris- style BGR color model,
+* with the colors Blue, Green, and Red packed into integer pixels.
+*/
+
+  public void writeJPEGImage(VisualizationViewer vv, String filename) {
+    int width = vv.getLayout().getCurrentSize().width;
+    int height = vv.getLayout().getCurrentSize().height;
+    Color bg = getBackground();
+
+    BufferedImage bi = new BufferedImage(width,height,BufferedImage.TYPE_INT_BGR);
+    Graphics2D graphics = bi.createGraphics();
+    graphics.setColor(bg);
+    graphics.fillRect(0,0, width, height);
+    vv.paintComponent(graphics);
+
+    try{
+       ImageIO.write(bi,"jpeg",new File(filename));
+    }catch(Exception e){e.printStackTrace();}
+}
+
+
+Q. How do I get XY locations for vertices without actually painting them?
+
+A.  Use the Layout (that's what it's for) without the Renderer or the
+GraphDraw. It looks like this:
+
+	layout = new WhateverLayout( g );
+	layout.initialize(new Dimension(600, 600));
+	while (!layout.incrementsAreDone() ) {
+	   // or run it for a fixed number of iterations
+	   layout.advancePositions();
+	}
+
+
+Q. Where is (x,y) data stored for vertices? How can I save out the
+locations of (x,y) coordinates of a graph to a file? How can I load
+the coordinates to a current graph?
+
+A. Under the GraphDraw systen, xy coordinates are maintained by the
+Layout (call layout.getX( v )  and layout.getY( v ) ). They are,
+however, stored on the vertex (for all AbstractLayout descendants) in
+the UserData: call layout.getBaseKey() to get the key.
+
+Unfortunately, there isn't a direct way to save out the vertices, but
+you can do it manually. Similarly, there is not a current Layout that
+reads from disk, but there's no reason it couldn't be built: simply
+arrange for its getX and getY to return values from a disk file.
+
+
+
+=================
+DRAWING GRAPHS
+===================
+
+Q. Do the layout algorithms take vertex size into consideration?
+
+A. No.
+
+
+
+Q. How well does the code that applies Filters to GraphDraw work?
+
+A. Poorly. We don't advocate using that as a way of generating dynamic graphs.
+
+
+Q. Help! KKlayout calculates coordinates out of bounds!
+
+A. Unfortunately, the algorithm is designed to pick a "roughly
+correct" size, and sometimes gets it wrong. The NewGraphDraw has an
+autoscale that's meant to help fix that; so is a patch submitted by
+Masanori Harada.
+	https://sourceforge.net/tracker/?group_id=73840&atid=539121
+which you may find useful.
+
+
+
+
+Q. On my graph I have several verticies with only 1 other vertex
+connected to it. When I draw the graph all of my unconnected verticies
+and low connected verticies are on the edges of the graph. Is there
+some way to get them to display visibly in the middle of the graph and
+not the edges?  
+
+A. Unfortunately, both FRLayout and KKLayout tend to smear vertices
+fairly far outwards. We haven't found a good solution to this yet.
+
+
+
+Q. How do I use the SettableRenderer's EdgeThicknessFunctions,
+VertexColorFunction, and similar?
+
+A. A VertexColorFunction is an interface that takes a vertex and
+returns a color. You can then create any object that implements that
+interface. The SettableRenderer will then use this VertexColorFunction
+to determine the color of each vertex by doing something like
+	g.setColor( veretx_color_func.getColor( vertex ));
+	
+Here's some examples to help clarify. First, this VCF returns red for everything.
+
+    // this returns red for everything
+    public MyAllRedVertexColorFunction implements VertexColorFunction {
+       public getColor( Vertex v ) {
+          return Color.RED;
+       }
+    }
+    
+This VCF returns red for all vertices with the user datum "SELECTED",
+blue for the input vertex, and black for everything else.
+
+   public MyComplexVertexColorFunction implements VertexColorFunction {
+
+      Vertex input = null;
+      
+      public MyComplexVertexColorFunction ( Vertex input ) {
+        this.input = input;
+      }
+      
+       public getColor( Vertex v ) {
+         if ( v == input ) return Color.BLUE;
+         if ( v.getUserDatum("SELECTED") != null) return Color.RED;
+         return Color.BLACK;
+       }     
+      
+   }
+   
+The important similiarity between these two is that they both return a
+color, given a vertex in the graph.
+
+More sample code is in ClusteringDemo, which paints different sorts of
+edges depending on whether they are "in" or "out" of the selection.
+
+NEW: Instead of SettableRenderer, try the new and improved PluggableRenderer;
+for an extended example of how to use it, take a look at PluggableRendererDemo.
+
+
+Q. I want to label nodes on a graph and use the (default) SettableRenderer.
+
+A. Great! You should create a StringLabeller, which will assign a
+label to each vertex. 
+
+	StringLabeller sl = StringLabeller.getLabeller( g );
+	int c  = 0;
+	for( Iterator i = g.getVertices().iterator(); i.hasNext(); ) {
+	    Vertex v = (Vertex) i.next();
+	    sl.setVertex( v, "VERTEX " + c);
+	    c++;
+	}
+	
+Then create a SettableRenderer for your graph created with the StringLabeller
+
+	// automatically uses the SettableRenderer as a default	
+	GraphDraw gd = new GraphDraw( g );
+	
+	// SettableRenderer should automatically find the Labeller.
+	// If you want to force it to use a different one, you'll need
+	// to create a new SettableRenderer
+	SettableRenderer sr = new SettableRenderer( sl );
+	gd.setRenderer( sr );
+
+
+Q. But I want to assign the labels in the UserData, or in the vertex's toString() method.
+
+A. The SettableRenderer takes in a StringLabeller, which--in
+turn--builds a graph-wide hashtable. As of recent versions, we've been
+exploring other ways of doing it, including the ToStringLabeller
+(which creates a virtual "label" for each node based on what the node
+returns as "toString()") and GlobalStringLabeller (which globally maps
+a list of labels, so that a label applies to all equivalent graphs, too.) 
+
+You could write a StringLabeller yourself. It might look, say, something like this:
+
+
+UserDataStringLabeller extends ToStringLabeller {
+
+   public UserDataStringLabeller( Graph g, String key) {
+     super( g );
+     this.key = key;
+   }
+
+  public getLabel( Vertex v ) {
+    return g.getUserDatum( v, key );
+  }
+
+}
+
+
+Q. Got any clever ideas for drawing arrows or other annotations?
+https://sourceforge.net/forum/forum.php?thread_id=1023095&forum_id=252062
+
+Q. ... and I want to add and remove nodes from my graph!
+
+A. See http://jung.sourceforge.net/applet/addnodedemo.html and the
+code in samples.graph.addnodedemo
+
+
+Q. How could I draw parallel edges?
+
+A. See discussion at
+https://sourceforge.net/forum/forum.php?thread_id=1079376&forum_id=252062
+
+
+
+
+Q. How can I add a tooltip to each vertex or edge?
+
+A. I haven't done it before. One is to override getTooltipText(
+MouseEvent) for the GraphDraw which would figure out where the mouse
+is, and thence which vertex or edge it is over. (Layouts can map a
+mouse to an Edge or Vertex). Take a look at 
+  http://java.sun.com/docs/books/tutorial/uiswing/components/tooltip.html
+
+NEW: This is now built into GraphDraw as of JUNG 1.5.
+
+
+Q. How can I implement rotate/pan/zoom for graphs?
+
+A. This is MUCH easier with the "pipeline" functionality in the
+NewGraphDraw system. See below, under "NewGraphDraw Specfic"
+
+NEW: Pan and zoom (but not rotate) are now (JUNG 1.5) built into the old graph 
+draw system as well.  Take a look at the contrib directory for the details.
+
+
+Q. How come the exact same graph turns out completely different each
+time it is drawn? This happens with all the layout managers. Are there
+randomness to it and is there a way to remove it?
+
+A. In the current visualization system, vertex x and y locations are
+ initialized with random functions. This happens in the functio
+ initializeLocation, which takes a Coordinates object, a Vertex, and
+ the size of the current screen. It is responsible for placing the vertex.
+
+Because the various embedders are (mostly) deterministic, if you start
+with a fixed layout, you'll get the same layout.
+
+You may override it by doing something like
+
+	class MyFRLayout extends FRLayout {
+
+	// overlaps all vertices at location x = 23,
+	// y = random to start with.
+	// probably not a good idea.
+	protected void initializeLocation(
+	    Vertex v,
+ 	    Coordinates coord,
+	    Dimension d) {
+	  double x = 23;
+  	  double y = Math.random() * d.getHeight();
+	  coord.setX(x);
+	  coord.setY(y);
+	}
+	}
+	
+Note that the NewGraphDraw mechanisms have explicit initiailization
+layouts (known as "StaticLayouts").
+
+
+Q. Is there a SpringLayout.incrementsAreDone() function?
+
+A. A possible "isdone" function is to add up all the stress (=actual
+length/desired length) on all the edges in the SpringLayout, and then
+watch for it to not change more than a specific amount for several
+iterations. We haven't provided one, however. Altenately, in the
+"samples.newGraphDraw" package, you can find systems for running a
+finite number of iterations and then stopping.
+
+
+Q. Does SpringLayout converge?
+
+A. Not necessarily, unfortunately. It can pretty much keep running
+forever. KKLayout and FRLayout both guarantee convergence.
+
+
+Q. Do the current layout algorithms use edge weight in any meaningful way?
+
+A. Not yet. Feel free to contribute code that does! Note that you'll
+ probably want to do that for undirected graphs only;
+a directed graph has the odd property that weights can be different in
+ opposite directions.
+
+================
+DYNAMIC GRAPHS
+=================
+
+Q. I get a ConcurrentModificationException when using GraphDraw. What does it mean?
+
+A. CME's come from changing graphs in the GraphDraw system. This is
+incompletely supported in GraphDraw, but more thoroughly supported in NewGraphDraw.
+
+
+================
+NEWGRAPHDRAW SPECIFIC
+================
+
+Q. Ok, why is there both GraphDraw and NewGraphDraw?
+
+A. GraphDraw was written as a quick adaptation of some code I have
+sitting around. While it works fairly well, it isn't elegant, and in
+particular it doesn't force synchronization (so that it may be
+calculating while it is drawing, which makes for ugly artifacts) and
+doesn't handle changes to the underlying graph. NewGraphDraw is meant
+to provide stable solutions for these issues.
+
+
+Q. When will NewGraphDraw be released?
+
+A. I'm not completely confident in it yet--only minor tweaks will be
+made before it's final release, but I don't expect that until
+August. Contact me (offkey@sourceforge) if you want to help out.
+
+Q. What support forum threads have worked on NewGraphDraw?
+
+A. 
+"Rotate/Pan/Zoom and Hiding Vertices"
+https://sourceforge.net/forum/forum.php?thread_id=1064205&forum_id=252062
+
+
+Q. When initializing an iterable layout with a static layout, is there
+ a "good" static layout to choose? I have tried using a Random layout
+ to initialize the SpringLayout, but all the vertices move towards the
+ center before spreading back out towards the outer edges. This is
+ rather time consuming. Suggestions are greatly appreciated.
+
+A. Unfortunately, the answer is "it depends on the graph". Some
+combinations of layout algorithms and graphs just don't work very
+well. Some layout algorithms are very good at what they do, but are
+(as you noted) time-consuming, especially for large
+graphs. SpringLayout is a rather slow choice, actually: have you
+considererd running a KKLayout, which starts with a phase of swapping
+vertices before it wiggles them about?
+
+For initialization, right now we only provide CircleLayout and RandomLayout.
+
+Consider also changing from one layout algorithm to another midway
+ through: consider
+ samples.preview_new_graphdraw.iterablelayouts.WrappedIterableLayout,
+ which allows you to run (say) KKLayout until it is done, followed by
+ a little bit of SpringLayout.
+
+
+Q. How can I implement rotate/pan/zoom for graphs?
+
+A. Put the rotation into the pipeline! Specifically, a
+LayoutTransformer modifies an EmittedLayout. Each time that the
+EmittedLayout is regen
+erated (due to a screen-resizing, or the
+animation advancing), the Transformer changes it before showing it on screen.
+
+So I would think that the best way to let the user "offset" vertices
+is to store the offsets in a Transformer that will automatically
+offset them as the program runs. Here's some sample code that will pan
+the whole graph over by (x,y); in addition, it will offset individual
+vertices by an additional (x, 0):
+
+  OffsetLayoutTransformer extends LayoutTransformer {
+
+    public void setOffset( double x, double y ) {
+      this.xOffset = x;
+      this.yOffset = y;
+    }
+
+    public void setOffsetSpecificVertex( Double x, Vertex v ) {
+      this.vertexOffset.put( v, x );
+    }
+
+    public EmittedLayout transform( EmittedLayout el ) {
+      for (vertex v in vertices) {
+      v.offset( x, y );
+      if( vertexoffset.containskey( v ))
+        v.offset( vertexoffset.get( v ), 0);
+      }
+    }
+  }
+
+
+===================
+Can I use JUNG with...
+=====================
+
+Q. ... Prefuse ( http://prefuse.sourceforge.net/ )
+
+A. Yes. Limited support is avaialable through the jung-prefuse toolkit.
+
+
+Q.  ... SWT ?
+
+A. Not yet. While we have had a code contribution of an SWT-ified
+GraphDraw, it froze up in some odd ways. If you are interested in
+trying to work with it, or are an SWT expert, we would be grateful for
+your help.
+
+
+
+Q. ...ColdFusion?
+
+A. We've seen it work before.
+https://sourceforge.net/forum/forum.php?thread_id=1093601&forum_id=252062
+Make sure to include the various packages: you can't create a graph
+without commons-collections, for example.
+
+
+==============
+OTHER
+============
+
+Q. How do I figure out where a mouse was clicked?
+
+A. See
+http://jung.sourceforge.net/doc/api/edu/uci/ics/jung/visualization/GraphMouseListener.html
+and the GraphDraw method addGraphMouseListener.
+x
+
+Q. How do I compile a project with JUNG?
+
+A. If you're working from the command line, you'll probaly want a line that looks like
+	javac -cp .;java\lib\jung.jar;java\lib\commons-collections.jar;java\lib\colt.jar test.java
+	java -cp .;java\lib\jung.jar;java\lib\commons-collections.jar;java\lib\colt.jar Test
+but you will probably be happier with a basic introduction to Java first 
+	http://java.sun.com/docs/books/tutorial/
+and the classpath documentation
+	http://java.sun.com/j2se/1.3/docs/tooldocs/win32/classpath.html
+and a decent IDE (integrated development environment)
+	http://www.eclipse.org
+
+Q. Where do the sample datasets live?
+
+A. If your distribution didn't come with them, then download them from
+the separate datasets.zip file on the release.  (As of JUNG 1.5, the build
+process has been modified to include the datasets in the jung-#.#.#.zip file.) 
+
+
+Q. Where is the source code?
+
+A. The JUNG.ZIP download has the source code; JUNG.JAR has only the class files.
+
+
+Q. GraphML seems not to load GraphML "data" attributes.
+
+A. Yes, that's correct. As of 1.4.3, Our GraphML is still buggy. We're
+looking for corrected code contributions.
+
+
+Q. What is a ConstraintViolationException, and how do I tell
+which constraint failed?
+
+A. A ConstraintViolationException is a subclass of IllegalArgumentException
+that is thrown when you try to add an edge or vertex to a graph that won't
+allow you to add that edge/vertex.  This can happen, for example, if you try
+to add a DirectedEdge to an UndirectedGraph.  It can also happen if you have 
+added a vertex/edge constraint (for example, "must include a Color user datum") 
+that a vertex/edge doesn't satisfy.
+
+The stack trace of a ConstraintViolationException will look something like this:
+
+edu.uci.ics.jung.exceptions.ConstraintViolationException: Predicate
+org.apache.commons.collections.functors.NotPredicate rejected
+E56(V81,V80): org.apache.commons.collections.functors.NotPredicate@1de3f2d
+	at edu.uci.ics.jung.graph.impl.AbstractArchetypeGraph.validate(AbstractArchetypeGraph.java:191)
+	at edu.uci.ics.jung.graph.impl.AbstractSparseGraph.addEdge(AbstractSparseGraph.java:136)
+	at [somewhere in your code]
+	
+At this point, you have a couple of options:
+
+(1) If the constraint is a simple one (i.e., it does not operate on other
+constraints/predicates), look at your code where you're adding this edge/vertex 
+and try to figure out what constraint is being violated.  This is usually fairly 
+obvious from the constraint type and the error message.
+
+(2) If the constraint is not simple (as in the example above; NotPredicate takes 
+a Predicate as an argument), catch the ConstraintViolationException, call 
+getViolatedConstraint() on it, and use PredicateUtils.evaluateNestedPredicates() 
+on the constraint to find out the results of evaluating each constituent 
+predicate.

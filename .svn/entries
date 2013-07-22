@@ -1,0 +1,80 @@
+10
+
+dir
+7
+file:///mnt/home-old/svn/AHP
+file:///mnt/home-old/svn/AHP
+
+
+
+2011-12-09T14:20:19.711997Z
+7
+root
+has-props
+has-prop-mods
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+17db9264-7ff8-48cb-9067-c5134e0ff8a6
+
+build.xml
+file
+
+
+
+
+2013-07-22T06:13:35.962882Z
+4e02424e2ae1a42382575748045e2f84
+2011-12-09T14:19:53.677495Z
+6
+root
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+3416
+
+docs
+dir
+
+lib
+dir
+
+nbproject
+dir
+
+src
+dir
+
+test
+dir
+
+web
+dir
+
